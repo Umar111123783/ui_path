@@ -659,6 +659,38 @@ def xaml_to_robin(xaml_text: str) -> str:
             body_lines.append(f"{indent}MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''{{Return}}''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: True")
             return
 
+        # 17. Scripting & Custom Code (InvokeCode, InvokePowerShell, InvokeWorkflowFile)
+        if tag == "InvokeCode":
+            disp = element.get("DisplayName", "Invoke Code")
+            code_text = element.get("Code", "")
+            if not code_text:
+                code_text = get_argument_text(element, "Code", "")
+            clean_script = code_text.replace("Console.WriteLine", "Write-Output")
+            clean_str = clean_vb_string_to_robin(clean_script)
+            body_lines.append(f"{indent}# {disp}")
+            body_lines.append(f"{indent}Scripting.RunPowershellScript.RunScript Script: {clean_str} ScriptOutput=> PowershellOutput ScriptError=> ScriptError")
+            declared_set.add("powershelloutput")
+            declared_set.add("scripterror")
+            return
+
+        if tag in ["InvokePowerShell", "InvokePowerShell`1"]:
+            disp = element.get("DisplayName", "Invoke PowerShell")
+            cmd = element.get("CommandText", "")
+            clean_cmd = clean_vb_string_to_robin(cmd)
+            body_lines.append(f"{indent}# {disp}")
+            body_lines.append(f"{indent}Scripting.RunPowershellScript.RunScript Script: {clean_cmd} ScriptOutput=> PowershellOutput ScriptError=> ScriptError")
+            declared_set.add("powershelloutput")
+            declared_set.add("scripterror")
+            return
+
+        if tag == "InvokeWorkflowFile":
+            wf_file = element.get("WorkflowFileName", "Subflow")
+            subflow_name = os.path.splitext(os.path.basename(wf_file))[0]
+            subflow_name = re.sub(r'\W+', '_', subflow_name)
+            body_lines.append(f"{indent}# Invoke Workflow: {wf_file}")
+            body_lines.append(f"{indent}CALL {subflow_name}")
+            return
+
         # Recurse for containers
         for ch in element:
             walk(ch, indent)
