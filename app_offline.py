@@ -117,7 +117,23 @@ with main_tab:
             convert_clicked = st.button("🚀 Fast Convert to Robin", type="primary", use_container_width=True)
 
         raw_xaml = active_nupkg.read(selected_xaml).decode("utf-8", "ignore")
+        flow_key = f"{pkg_name}::{selected_xaml}"
         cached_entry = get_golden_flow(pkg_name=base_pkg_name, xaml_content=raw_xaml, xaml_name=os.path.basename(selected_xaml))
+
+        # Auto-convert immediately when a new bot/package is selected, or on manual click
+        if st.session_state.get("active_flow_key") != flow_key or convert_clicked:
+            if cached_entry and not convert_clicked:
+                robin_code = cached_entry["robin_script"]
+            else:
+                robin_code = xaml_to_robin(raw_xaml)
+
+            st.session_state["offline_robin_result"] = robin_code
+            st.session_state["robin_editor"] = robin_code
+            st.session_state["offline_xaml_view"] = raw_xaml
+            st.session_state["active_flow_key"] = flow_key
+        else:
+            robin_code = st.session_state.get("robin_editor", st.session_state.get("offline_robin_result", ""))
+            raw_xaml = st.session_state.get("offline_xaml_view", raw_xaml)
 
         if cached_entry:
             st.markdown(
@@ -126,19 +142,13 @@ with main_tab:
             )
             c_load1, c_load2 = st.columns([1, 3])
             with c_load1:
-                if st.button("⚡ Load from Golden Database"):
+                if st.button("⚡ Reset to Golden Database"):
                     st.session_state["offline_robin_result"] = cached_entry["robin_script"]
+                    st.session_state["robin_editor"] = cached_entry["robin_script"]
                     st.session_state["offline_xaml_view"] = raw_xaml
+                    st.rerun()
 
-        if convert_clicked or "offline_robin_result" in st.session_state:
-            if convert_clicked:
-                robin_code = xaml_to_robin(raw_xaml)
-                st.session_state["offline_robin_result"] = robin_code
-                st.session_state["offline_xaml_view"] = raw_xaml
-            else:
-                robin_code = st.session_state["offline_robin_result"]
-                raw_xaml = st.session_state.get("offline_xaml_view", "")
-
+        if robin_code:
             val = validate_robin(robin_code)
             if val["valid"]:
                 st.success("✅ **100% Paste-Validated for PAD Designer!** (0 syntax errors)")
