@@ -145,7 +145,12 @@ with main_tab:
             else:
                 st.warning(f"Validation notices: {val.get('errors')}")
 
-            st.info("💡 **How to Paste into Power Automate Desktop:** Click inside the box below, press **Ctrl+A** then **Ctrl+C**, switch to PAD Designer canvas, and press **Ctrl+V**.")
+            st.info(
+                "💡 **How to Paste into Power Automate Desktop:**\n"
+                "1. Click inside the text box below, press **Ctrl+A** then **Ctrl+C**.\n"
+                "2. Open PAD Designer canvas and press **Ctrl+V**.\n"
+                "⚠️ **Important**: Ensure your flow in PAD is created as a **Standard flow** (Classic Robin). Do NOT select **Power Fx**, as Power Fx flows use a different formula language."
+            )
 
             edited_script = st.text_area(
                 "Plain Text Robin Script (Editable / Copy-Safe: Ctrl+A → Ctrl+C)",
