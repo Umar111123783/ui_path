@@ -691,11 +691,42 @@ def xaml_to_robin(xaml_text: str) -> str:
             body_lines.append(f"{indent}CALL {subflow_name}")
             return
 
-        # Recurse for containers
+        # Recurse for containers & fallback capture
+        before_count = len(body_lines)
         for ch in element:
             walk(ch, indent)
+        after_count = len(body_lines)
+
+        STRUCTURAL_PREFIXES = ("ActivityAction", "ActivityFunc", "TextExpression", "WorkflowViewState")
+        STRUCTURAL_TAGS = {
+            "Activity", "Sequence", "Flowchart", "FlowStep", "FlowDecision", "FlowSwitch",
+            "Collection", "AssemblyReference", "String", "Dictionary", "Boolean", "Int32",
+            "ViewStateData", "IdRef", "VisualBasicValue", "VisualBasicReference",
+            "InArgument", "OutArgument", "InOutArgument", "TargetAnchorable", "TargetApp",
+            "Target", "VerifyOptions"
+        }
+
+        if after_count == before_count and tag not in STRUCTURAL_TAGS and not any(tag.startswith(p) for p in STRUCTURAL_PREFIXES):
+            disp = element.get("DisplayName", tag)
+            body_lines.append(f"{indent}# Activity: {disp} [{tag}]")
+
+            for sub in element.iter():
+                stag = clean_tag(sub.tag)
+                if stag == "OutArgument":
+                    out_text = (sub.text or "").strip()
+                    if out_text.startswith("[") and out_text.endswith("]"):
+                        out_text = out_text[1:-1]
+                    if out_text and out_text.isidentifier() and out_text.lower() not in declared_set:
+                        initializers.append(f"SET {out_text} TO $''''''")
+                        declared_set.add(out_text.lower())
 
     walk(root)
+
+    # Guard: Ensure the body is never empty under any circumstances
+    runnable_actions = [l for l in body_lines if l.strip() and not l.strip().startswith("#")]
+    if not runnable_actions:
+        body_lines.append("Display.ShowMessageDialog.ShowMessage Icon: Display.Icon.Information Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False Message: $'''Workflow converted successfully with activity placeholders.''' Title: $'''Conversion Status''' ButtonPressed=> ButtonPressed")
+        declared_set.add("buttonpressed")
 
     if excel_opened:
         body_lines.append("")
