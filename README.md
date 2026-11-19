@@ -53,4 +53,5 @@ python test_offline.py "data/ReadPdf_FromPageToPage.1.0.1 1.nupkg"
 2. **.NET System.IO Transpilation**: Converts raw C# methods (`Directory.GetFiles`, `Path.GetFileNameWithoutExtension`, `.Count()`) into native PAD actions.
 3. **Strict Formatting Rules**: Enforces double backslashes before `%` (`\\%Var%`), prevents trailing backslash quote escapes (`C:\\`), and eliminates lone `%` signs.
 4. **Pre-Paste Validation Loop**: Every script is automatically validated with `check-flows.js` before being presented.
+5. **Modern & Classic UI Automation**: Native support for UiPath Modern Experience (`NApplicationCard`, `NKeyboardShortcuts`, `NTypeInto`, `NCheckState`, `NClick`) and Classic UI activities into native PAD desktop actions.
 
