@@ -1,11 +1,12 @@
 {
-  "version": "1.0.0",
-  "name": "UiPath to PAD Migration Diagnostic & Fallback Knowledge Base",
-  "description": "Rule-based engine to detect missing components, edge cases, and provide actionable auto-fixes and fallback messages for RPA engineers.",
-  
+  "version": "2.0.0",
+  "name": "UiPath to Power Automate Desktop Enterprise Migration Rules & Diagnostic Engine",
+  "description": "Comprehensive rule repository for detecting missing components, edge cases, enterprise dependencies, and providing actionable guidance & fallbacks for RPA engineers.",
+
   "diagnostic_rules": [
     {
       "id": "RULE_ORCHESTRATOR_CREDENTIALS",
+      "category": "Security & Assets",
       "trigger_tags": ["GetCredential", "GetRobotAsset"],
       "severity": "WARNING",
       "missing_part": "UiPath Orchestrator Asset / Credential Storage",
@@ -15,6 +16,7 @@
     },
     {
       "id": "RULE_ORCHESTRATOR_QUEUES",
+      "category": "Work Queues",
       "trigger_tags": ["AddQueueItem", "GetQueueItem", "SetTransactionStatus"],
       "severity": "WARNING",
       "missing_part": "UiPath Orchestrator Work Queue Integration",
@@ -23,17 +25,49 @@
       "pad_fallback_action": "# [ACTION REQUIRED] Map to Power Automate Desktop Work Queues (Dataverse)\nSET QueueItem TO $''''''"
     },
     {
+      "id": "RULE_SAP_AUTOMATION",
+      "category": "ERP & Enterprise Systems",
+      "trigger_tags": ["SAPLogon", "SAPClick", "SAPSelectMenuItem", "SAPTableExtract", "SAPTransaction"],
+      "severity": "WARNING",
+      "missing_part": "SAP GUI Scripting Authorization & Connection Profile",
+      "diagnostic_message": "SAP GUI automation activity detected. Requires SAP GUI Scripting enabled on both the SAP Server and client workstation.",
+      "recommended_action": "Verify 'saplogon.ini' connection profile and use PAD's native SAP.OpenConnection and SAP.ExecuteTransaction actions.",
+      "pad_fallback_action": "# [ACTION REQUIRED] Verify SAP GUI Scripting is enabled. Use SAP.OpenConnection in PAD."
+    },
+    {
+      "id": "RULE_TERMINAL_MAINFRAME",
+      "category": "Legacy & Mainframe Systems",
+      "trigger_tags": ["TerminalSession", "TerminalSendKeys", "TerminalGetText", "TerminalMoveCursor"],
+      "severity": "WARNING",
+      "missing_part": "Mainframe Terminal Emulation Profile (EHLLAPI / Telnet)",
+      "diagnostic_message": "IBM 3270 / 5250 / VT100 Terminal activity detected. In PAD, terminal automation requires the Terminal Emulation module.",
+      "recommended_action": "Use TerminalEmulation.Connect with your host address and port (default 23 or 992 for SSL).",
+      "pad_fallback_action": "TerminalEmulation.Connect Host: $'''localhost''' Port: 23 TerminalType: TerminalEmulation.TerminalType.VT100 ConnectionTimeout: 30 Session=> TerminalSession"
+    },
+    {
+      "id": "RULE_EXCEL_MACROS_VBA",
+      "category": "Office Automation",
+      "trigger_tags": ["ExecuteMacro", "RunMacro", "InvokeVBA"],
+      "severity": "WARNING",
+      "missing_part": "Excel Macro Trust Center Permissions (.xlsm)",
+      "diagnostic_message": "Excel VBA Macro execution detected. Excel Trust Center must allow macro execution.",
+      "recommended_action": "Use Excel.RunMacro action in PAD. Pass workbook instance and exact macro sub/function name.",
+      "pad_fallback_action": "Excel.RunMacro Instance: ExcelInstance Macro: $'''Module1.MyMacro'''"
+    },
+    {
       "id": "RULE_DATABASE_INTEGRATION",
+      "category": "Data & Storage",
       "trigger_tags": ["ExecuteQuery", "ExecuteNonQuery", "InsertDataTable", "DatabaseConnect"],
       "severity": "INFO",
       "missing_part": "Database Connection String & Provider Setup",
       "diagnostic_message": "Database SQL operations detected. Requires configuring an ODBC / OLEDB connection in PAD.",
-      "recommended_action": "Use Database.ConnectToDatabase and Database.ExecuteSqlStatement in PAD.",
+      "recommended_action": "Use Database.ConnectWithConnectionString and Database.ExecuteSqlStatement in PAD.",
       "pad_fallback_action": "Database.ConnectWithConnectionString.Connect ConnectionString: $'''Provider=SQLOLEDB;Data Source=localhost;Initial Catalog=DB;Integrated Security=SSPI;''' Connection=> DatabaseConnection\nDatabase.ExecuteSqlStatement.ExecuteSql Connection: DatabaseConnection Statement: $'''SELECT * FROM MyTable''' QueryResult=> dtQueryResult"
     },
     {
       "id": "RULE_EMAIL_AUTOMATION",
-      "trigger_tags": ["SendOutlookMail", "GetOutlookMailMessages", "SendMail", "GetIMAPMailMessages"],
+      "category": "Email & Communication",
+      "trigger_tags": ["SendOutlookMail", "GetOutlookMailMessages", "SendMail", "GetIMAPMailMessages", "SendExchangeMail"],
       "severity": "INFO",
       "missing_part": "Outlook / Mail Client Instance Binding",
       "diagnostic_message": "Email operation detected. Ensure local Microsoft Outlook or Exchange Web Services is authorized.",
@@ -42,6 +76,7 @@
     },
     {
       "id": "RULE_UI_SELECTORS",
+      "category": "UI Automation",
       "trigger_tags": ["NClick", "Click", "NTypeInto", "TypeInto", "NCheckState"],
       "severity": "INFO",
       "missing_part": "Desktop / Web UI Control Repository Binding",
@@ -50,7 +85,98 @@
       "pad_fallback_action": "# [INFO] UI action mapped to active window. Bind to PAD UI Element if specific targeting is needed."
     },
     {
+      "id": "RULE_WEB_BROWSER_AUTOMATION",
+      "category": "Web Automation",
+      "trigger_tags": ["OpenBrowser", "AttachBrowser", "NavigateTo", "CloseTab", "GoBack"],
+      "severity": "INFO",
+      "missing_part": "Power Automate Desktop Browser Extension (Edge / Chrome)",
+      "diagnostic_message": "Web browser automation detected. Requires Microsoft Power Automate extension installed in Edge or Chrome.",
+      "recommended_action": "Use WebAutomation.LaunchEdge or WebAutomation.LaunchChrome in PAD.",
+      "pad_fallback_action": "WebAutomation.LaunchEdge.LaunchEdge Url: $'''https://www.google.com''' WindowState: WebAutomation.BrowserWindowState.Normal ClearCache: False ClearCookies: False WaitForPageToLoadTimeout: 60 BrowserInstance=> Browser"
+    },
+    {
+      "id": "RULE_PDF_OCR",
+      "category": "Document Processing",
+      "trigger_tags": ["ReadPDFWithOCR", "ExtractImagesFromPDF", "DigitizeDocument", "ExtractPDFPageRange"],
+      "severity": "INFO",
+      "missing_part": "OCR Engine & Resolution Multiplier Configuration",
+      "diagnostic_message": "PDF OCR / Document Understanding detected. In PAD, OCR requires Windows OCR or Tesseract engine.",
+      "recommended_action": "Use OCR.ExtractTextWithOCR.ExtractTextFromFileWithWindowsOcr or native Pdf.ExtractTextFromPDF actions in PAD.",
+      "pad_fallback_action": "Pdf.ExtractTextFromPDF.ExtractText PDFFile: $'''C:\\Doc.pdf''' DetectLayout: False Password: $'''''' ExtractedText=> ExtractedText"
+    },
+    {
+      "id": "RULE_COMPRESSION_ZIP",
+      "category": "Files & Folders",
+      "trigger_tags": ["ZipFiles", "UnzipFiles", "CompressFiles", "ExtractFiles"],
+      "severity": "INFO",
+      "missing_part": "ZIP Archive Destination Directory",
+      "diagnostic_message": "File compression or extraction detected. In PAD, compression is handled natively by the Compression module.",
+      "recommended_action": "Use Compression.ZipFiles and Compression.UnzipFiles in PAD.",
+      "pad_fallback_action": "Compression.ZipFiles.Zip Files: FilesToZip ArchiveFile: $'''C:\\Archive.zip''' CompressionLevel: Compression.CompressionLevel.Normal"
+    },
+    {
+      "id": "RULE_FTP_SFTP",
+      "category": "Network & Protocols",
+      "trigger_tags": ["WithFtpSession", "FTPDownloadFile", "FTPUploadFile", "OpenFtpSession"],
+      "severity": "WARNING",
+      "missing_part": "FTP / SFTP Host Credentials & Port",
+      "diagnostic_message": "FTP/SFTP transfer detected. Requires FTP server host address, port, and authentication credentials.",
+      "recommended_action": "Use FTP.OpenConnection, FTP.DownloadFile, or FTP.UploadFile in PAD.",
+      "pad_fallback_action": "FTP.OpenConnection.OpenConnection Server: $'''ftp.example.com''' Port: 21 UserName: $'''user''' Password: $'''pass''' Connection=> FtpConnection"
+    },
+    {
+      "id": "RULE_CLIPBOARD_OPERATIONS",
+      "category": "System & Clipboard",
+      "trigger_tags": ["SetToClipboard", "GetFromClipboard"],
+      "severity": "INFO",
+      "missing_part": "Windows System Clipboard Lock",
+      "diagnostic_message": "Clipboard operation detected. In PAD, clipboard access is provided by Clipboard.GetText and Clipboard.SetText.",
+      "recommended_action": "Ensure no other background processes overwrite clipboard contents during execution.",
+      "pad_fallback_action": "Clipboard.GetText Text=> ClipboardText"
+    },
+    {
+      "id": "RULE_WORD_AUTOMATION",
+      "category": "Office Automation",
+      "trigger_tags": ["WordApplicationScope", "WordAppendText", "WordReplaceText", "WordExportToPdf"],
+      "severity": "INFO",
+      "missing_part": "Microsoft Word Application Installation",
+      "diagnostic_message": "Word document processing detected. Requires local Microsoft Word desktop client.",
+      "recommended_action": "Use Word.LaunchWord, Word.SaveWord, and Word.CloseWord in PAD.",
+      "pad_fallback_action": "Word.LaunchWord.Launch Visible: False DocumentPath: $'''C:\\Doc.docx''' Instance=> WordInstance"
+    },
+    {
+      "id": "RULE_DATATABLE_ADVANCED",
+      "category": "Data & Storage",
+      "trigger_tags": ["JoinDataTables", "MergeDataTable", "LookupDataTable", "RemoveDuplicateRows"],
+      "severity": "INFO",
+      "missing_part": "DataTable Column Schema Matching",
+      "diagnostic_message": "Advanced DataTable manipulation detected (Merge, Join, Lookup).",
+      "recommended_action": "Use Variables.MergeDataTables, Variables.FilterDataTable, or LOOP FOREACH in PAD.",
+      "pad_fallback_action": "# [INFO] Use Variables.MergeDataTables or Variables.FilterDataTable in PAD."
+    },
+    {
+      "id": "RULE_EXCEPTION_HANDLING",
+      "category": "Flow Control",
+      "trigger_tags": ["TryCatch", "Throw", "Rethrow", "BusinessRuleException"],
+      "severity": "INFO",
+      "missing_part": "Error Handling Block Architecture",
+      "diagnostic_message": "TryCatch / Exception block detected. In PAD, exception handling is configured using BLOCK ... ON BLOCK ERROR or action-level ON ERROR.",
+      "recommended_action": "Wrap sensitive steps inside BLOCK ... ON BLOCK ERROR ... END.",
+      "pad_fallback_action": "BLOCK ErrorHandlingBlock\n    # Enclosed actions\nON BLOCK ERROR\n    SET ErrorFlag TO True\nEND"
+    },
+    {
+      "id": "RULE_IMAGE_AUTOMATION_CITRIX",
+      "category": "Citrix & Virtual Apps",
+      "trigger_tags": ["ClickImage", "ClickText", "ImageExists", "HoverImage"],
+      "severity": "WARNING",
+      "missing_part": "Screen Resolution & DPI Scaling Alignment (100%)",
+      "diagnostic_message": "Surface/Image-based automation detected (often used for Citrix / Remote Desktop). Image matching depends heavily on screen resolution and DPI.",
+      "recommended_action": "Ensure test workstation and production runner use identical display resolution and 100% DPI scaling.",
+      "pad_fallback_action": "# [WARNING] Image matching detected. Verify 100% display scaling on runner machine."
+    },
+    {
       "id": "RULE_LINQ_EXPRESSIONS",
+      "category": "Expression Language",
       "trigger_patterns": [".AsEnumerable()", ".Where(", ".Select(", ".CopyToDataTable()"],
       "severity": "WARNING",
       "missing_part": "VB.NET LINQ Query to Native PAD Filter Transformation",
@@ -60,6 +186,7 @@
     },
     {
       "id": "RULE_MULTI_WORKFLOW_CALLS",
+      "category": "Modularity",
       "trigger_tags": ["InvokeWorkflowFile"],
       "severity": "INFO",
       "missing_part": "Child Workflow File (.xaml) Aggregation",
@@ -69,6 +196,7 @@
     },
     {
       "id": "RULE_SECURE_STRING",
+      "category": "Security & Assets",
       "trigger_patterns": ["SecureString", "PasswordBox"],
       "severity": "WARNING",
       "missing_part": "Encrypted SecureText Variable",
@@ -78,12 +206,33 @@
     },
     {
       "id": "RULE_CUSTOM_SCRIPTING",
+      "category": "Custom Code",
       "trigger_tags": ["InvokeCode", "InvokePowerShell", "InvokePowerShell`1"],
       "severity": "INFO",
       "missing_part": ".NET Scripting Runtime Dependency",
       "diagnostic_message": "Custom code execution detected. Converted to native Scripting.RunPowershellScript.",
       "recommended_action": "Verify execution policy and required .NET libraries are accessible in the PAD runtime environment.",
       "pad_fallback_action": "# [INFO] Custom script mapped to PowerShell execution."
+    },
+    {
+      "id": "RULE_HTTP_REST_SERVICES",
+      "category": "Web APIs",
+      "trigger_tags": ["HttpClient", "NetHttpRequest", "SoapClient"],
+      "severity": "INFO",
+      "missing_part": "API Headers & Authentication Tokens",
+      "diagnostic_message": "REST/HTTP Web Service request detected. Transpiled to Web.InvokeWebService.InvokeWebService.",
+      "recommended_action": "Verify URL endpoint, Authorization headers, and content-type in the PAD action settings.",
+      "pad_fallback_action": "Web.InvokeWebService.InvokeWebService Url: $'''https://api.example.com''' Method: Web.Method.Get Accept: $'''application/json''' ContentType: $'''application/json''' ConnectionTimeout: 30 FollowRedirection: True ClearCookies: False FailOnErrorStatus: False EncodeRequestBody: True UserAgent: $'''Mozilla/5.0''' Encoding: Web.Encoding.AutoDetect AcceptUntrustedCertificates: False ResponseHeaders=> ResponseHeaders Response=> responseString StatusCode=> responseStatus"
+    },
+    {
+      "id": "RULE_CSHARP_EXPRESSION_LANGUAGE",
+      "category": "Expression Language",
+      "trigger_patterns": ["? :", "!= null", "== null"],
+      "severity": "INFO",
+      "missing_part": "C# Expression Syntax Mapping",
+      "diagnostic_message": "C# null-coalescing or ternary conditional syntax detected.",
+      "recommended_action": "Ensure conditions are converted into IF ... THEN ... ELSE statements in PAD.",
+      "pad_fallback_action": "# [INFO] C# conditional syntax detected. Converted to IF-ELSE block."
     }
   ],
 
