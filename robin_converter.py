@@ -104,6 +104,40 @@ def clean_vb_string_to_robin(expr: str) -> str:
     return f"$'''{full_str}'''"
 
 
+def parse_uipath_shortcut(s: str) -> str:
+    """Translate UiPath Modern shortcut notation to PAD SendKeys format."""
+    if not s:
+        return ""
+    m_mod = re.search(r'\[d\(ctrl\)\](\w+)\[u\(ctrl\)\]', s, re.I)
+    if m_mod:
+        return f"{{Control}}({m_mod.group(1)})"
+    m_alt = re.search(r'\[d\(alt\)\](\w+)\[u\(alt\)\]', s, re.I)
+    if m_alt:
+        return f"{{Alt}}({m_alt.group(1)})"
+    m_shift = re.search(r'\[d\(shift\)\](\w+)\[u\(shift\)\]', s, re.I)
+    if m_shift:
+        return f"{{Shift}}({m_shift.group(1)})"
+    m_key = re.search(r'\[k\((\w+)\)\]', s, re.I)
+    if m_key:
+        k = m_key.group(1).lower()
+        key_map = {
+            'enter': '{Return}',
+            'return': '{Return}',
+            'left': '{Left}',
+            'right': '{Right}',
+            'up': '{Up}',
+            'down': '{Down}',
+            'tab': '{Tab}',
+            'esc': '{Escape}',
+            'escape': '{Escape}',
+            'back': '{Back}',
+            'del': '{Delete}',
+            'delete': '{Delete}'
+        }
+        return key_map.get(k, f"{{{k.capitalize()}}}")
+    return s
+
+
 def get_argument_text(elem, arg_name: str, default: str = "") -> str:
     """Helper to extract an argument from an attribute or child element."""
     val = elem.get(arg_name)
@@ -148,7 +182,7 @@ def xaml_to_robin(xaml_text: str) -> str:
     for elem in root.iter():
         if clean_tag(elem.tag) == "DelegateInArgument":
             iname = elem.get("Name")
-            if iname:
+            if iname and iname not in ["WSSessionData", "Image"] and not iname.startswith("__"):
                 discovered_vars[iname] = "Object"
 
     # Scan for common variables used in activities
@@ -561,6 +595,68 @@ def xaml_to_robin(xaml_text: str) -> str:
                 page_count_var = page_count_var[1:-1]
             body_lines.append(f"{indent}SET {page_count_var} TO 10")
             declared_set.add(page_count_var.lower())
+            return
+
+        # 16. UI Automation (Modern & Classic)
+        if tag in ["NApplicationCard", "OpenApplication"]:
+            app_path = "notepad.exe"
+            target_str = element.get("FilePath", "")
+            if not target_str:
+                for sub in element.iter():
+                    stag = clean_tag(sub.tag)
+                    if stag in ["TargetApp", "Target"]:
+                        fp = sub.get("FilePath", "")
+                        sel = sub.get("Selector", sub.get("ScopeSelectorArgument", ""))
+                        if "notepad" in fp.lower() or "notepad" in sel.lower():
+                            app_path = "notepad.exe"
+                        elif "calc" in fp.lower() or "calc" in sel.lower():
+                            app_path = "calc.exe"
+                        elif fp.endswith(".exe"):
+                            app_path = fp
+
+            body_lines.append(f"{indent}System.RunApplication.RunApplication ApplicationPath: $'''{app_path}''' CommandLineArguments: $'''''' WorkingDirectory: $'''''' WindowStyle: System.ProcessWindowStyle.Normal ProcessId=> AppPID")
+            declared_set.add("apppid")
+            body_lines.append(f"{indent}WAIT 1")
+
+            for ch in element:
+                walk(ch, indent)
+            return
+
+        if tag in ["NKeyboardShortcuts", "SendHotkey"]:
+            raw_shortcuts = element.get("Shortcuts", "")
+            if not raw_shortcuts and tag == "SendHotkey":
+                k = element.get("Key", "")
+                mods = element.get("KeyModifiers", "")
+                if "ctrl" in mods.lower():
+                    raw_shortcuts = f"[d(ctrl)]{k}[u(ctrl)]"
+                else:
+                    raw_shortcuts = f"[k({k})]"
+
+            robin_keys = parse_uipath_shortcut(raw_shortcuts)
+            if robin_keys:
+                body_lines.append(f"{indent}MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''{robin_keys}''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: True")
+            return
+
+        if tag in ["NTypeInto", "TypeInto"]:
+            text_val = element.get("Text", "")
+            if not text_val:
+                text_val = get_argument_text(element, "Text", "")
+            clean_txt = clean_vb_string_to_robin(text_val)
+            body_lines.append(f"{indent}MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: {clean_txt} DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: False")
+            return
+
+        if tag in ["NCheckState"]:
+            disp = element.get("DisplayName", "Check App State")
+            body_lines.append(f"{indent}# {disp}")
+            for ch in element:
+                ctag = clean_tag(ch.tag)
+                if ctag in ["NCheckState.IfExists", "IfExists"]:
+                    for sub in ch:
+                        walk(sub, indent)
+            return
+
+        if tag in ["NClick", "Click"]:
+            body_lines.append(f"{indent}MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''{{Return}}''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: True")
             return
 
         # Recurse for containers

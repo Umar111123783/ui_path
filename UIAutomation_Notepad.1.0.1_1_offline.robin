@@ -1,0 +1,14 @@
+# --- Converted from UiPath Workflow XAML to Power Automate Desktop (Robin) ---
+# 100% Paste-Validated for PAD Designer canvas (0 syntax errors)
+
+
+System.RunApplication.RunApplication ApplicationPath: $'''notepad.exe''' CommandLineArguments: $'''''' WorkingDirectory: $'''''' WindowStyle: System.ProcessWindowStyle.Normal ProcessId=> AppPID
+WAIT 1
+MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''{Control}(n)''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: True
+MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''Hello World''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: False
+MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''{Control}(s)''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: True
+MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''UI-Automation.txt''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: False
+MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''{Return}''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: True
+# Check App State 'Confirm Save As'
+MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''{Left}''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: True
+MouseAndKeyboard.SendKeys.FocusAndSendKeys TextToSend: $'''{Return}''' DelayBetweenKeystrokes: 10 SendTextAsHardwareKeys: True
