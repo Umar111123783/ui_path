@@ -1,0 +1,97 @@
+{
+  "version": "1.0.0",
+  "name": "UiPath to PAD Migration Diagnostic & Fallback Knowledge Base",
+  "description": "Rule-based engine to detect missing components, edge cases, and provide actionable auto-fixes and fallback messages for RPA engineers.",
+  
+  "diagnostic_rules": [
+    {
+      "id": "RULE_ORCHESTRATOR_CREDENTIALS",
+      "trigger_tags": ["GetCredential", "GetRobotAsset"],
+      "severity": "WARNING",
+      "missing_part": "UiPath Orchestrator Asset / Credential Storage",
+      "diagnostic_message": "UiPath Orchestrator asset or credential call detected. In Power Automate Desktop, credentials must be retrieved from CyberArk, Azure Key Vault, or Power Platform Credentials.",
+      "recommended_action": "Configure CyberArk or Azure Key Vault connector in PAD, or use Credentials.GetCredential action.",
+      "pad_fallback_action": "# [ACTION REQUIRED] Replace with CyberArk / Azure Key Vault or PAD Credential\nSET AssetValue TO $''''''"
+    },
+    {
+      "id": "RULE_ORCHESTRATOR_QUEUES",
+      "trigger_tags": ["AddQueueItem", "GetQueueItem", "SetTransactionStatus"],
+      "severity": "WARNING",
+      "missing_part": "UiPath Orchestrator Work Queue Integration",
+      "diagnostic_message": "UiPath Orchestrator Queue activity detected. PAD uses Power Automate Desktop Work Queues in Dataverse.",
+      "recommended_action": "Map to native PAD actions: WorkQueues.ProcessWorkQueueItem or WorkQueues.UpdateWorkQueueItem.",
+      "pad_fallback_action": "# [ACTION REQUIRED] Map to Power Automate Desktop Work Queues (Dataverse)\nSET QueueItem TO $''''''"
+    },
+    {
+      "id": "RULE_DATABASE_INTEGRATION",
+      "trigger_tags": ["ExecuteQuery", "ExecuteNonQuery", "InsertDataTable", "DatabaseConnect"],
+      "severity": "INFO",
+      "missing_part": "Database Connection String & Provider Setup",
+      "diagnostic_message": "Database SQL operations detected. Requires configuring an ODBC / OLEDB connection in PAD.",
+      "recommended_action": "Use Database.ConnectToDatabase and Database.ExecuteSqlStatement in PAD.",
+      "pad_fallback_action": "Database.ConnectWithConnectionString.Connect ConnectionString: $'''Provider=SQLOLEDB;Data Source=localhost;Initial Catalog=DB;Integrated Security=SSPI;''' Connection=> DatabaseConnection\nDatabase.ExecuteSqlStatement.ExecuteSql Connection: DatabaseConnection Statement: $'''SELECT * FROM MyTable''' QueryResult=> dtQueryResult"
+    },
+    {
+      "id": "RULE_EMAIL_AUTOMATION",
+      "trigger_tags": ["SendOutlookMail", "GetOutlookMailMessages", "SendMail", "GetIMAPMailMessages"],
+      "severity": "INFO",
+      "missing_part": "Outlook / Mail Client Instance Binding",
+      "diagnostic_message": "Email operation detected. Ensure local Microsoft Outlook or Exchange Web Services is authorized.",
+      "recommended_action": "Use Outlook.Launch and Outlook.RetrieveEmailMessages or Outlook.SendEmailThroughOutlook in PAD.",
+      "pad_fallback_action": "Outlook.Launch Instance=> OutlookInstance\nOutlook.RetrieveEmailMessages.RetrieveEmails MailFolder: $'''Inbox''' Account: $'''''' EmailsToRetrieve: Outlook.RetrieveMessagesMode.Unread Messages=> RetrievedEmails Instance: OutlookInstance"
+    },
+    {
+      "id": "RULE_UI_SELECTORS",
+      "trigger_tags": ["NClick", "Click", "NTypeInto", "TypeInto", "NCheckState"],
+      "severity": "INFO",
+      "missing_part": "Desktop / Web UI Control Repository Binding",
+      "diagnostic_message": "UI Automation activity converted to reliable keyboard/shortcut actions. For complex UI trees, bind to PAD UI Elements.",
+      "recommended_action": "If targeting specific deeply-nested fields, capture the control using the PAD UI Element picker.",
+      "pad_fallback_action": "# [INFO] UI action mapped to active window. Bind to PAD UI Element if specific targeting is needed."
+    },
+    {
+      "id": "RULE_LINQ_EXPRESSIONS",
+      "trigger_patterns": [".AsEnumerable()", ".Where(", ".Select(", ".CopyToDataTable()"],
+      "severity": "WARNING",
+      "missing_part": "VB.NET LINQ Query to Native PAD Filter Transformation",
+      "diagnostic_message": "VB.NET LINQ query detected in expression. PAD Robin does not support LINQ lambda syntax.",
+      "recommended_action": "Replace LINQ query with Variables.FilterDataTable or a LOOP FOREACH block.",
+      "pad_fallback_action": "# [ACTION REQUIRED] LINQ expression detected. Use Variables.FilterDataTable or LOOP FOREACH to filter."
+    },
+    {
+      "id": "RULE_MULTI_WORKFLOW_CALLS",
+      "trigger_tags": ["InvokeWorkflowFile"],
+      "severity": "INFO",
+      "missing_part": "Child Workflow File (.xaml) Aggregation",
+      "diagnostic_message": "InvokeWorkflowFile detected. In PAD, child workflows are executed as Subflows sharing flow-wide global variables.",
+      "recommended_action": "Ensure the called workflow is created as a Subflow tab in PAD under the same name.",
+      "pad_fallback_action": "# [INFO] Subflow invocation. In PAD, click 'Subflows' -> create corresponding subflow tab."
+    },
+    {
+      "id": "RULE_SECURE_STRING",
+      "trigger_patterns": ["SecureString", "PasswordBox"],
+      "severity": "WARNING",
+      "missing_part": "Encrypted SecureText Variable",
+      "diagnostic_message": "SecureString / Password field detected. In PAD, passwords should be stored as Direct Encrypted Text or retrieved from credentials.",
+      "recommended_action": "Mark variable as sensitive in PAD variables pane or use Credentials manager.",
+      "pad_fallback_action": "# [SECURITY WARNING] SecureString detected. Set variable as 'Sensitive' in PAD variable settings."
+    },
+    {
+      "id": "RULE_CUSTOM_SCRIPTING",
+      "trigger_tags": ["InvokeCode", "InvokePowerShell", "InvokePowerShell`1"],
+      "severity": "INFO",
+      "missing_part": ".NET Scripting Runtime Dependency",
+      "diagnostic_message": "Custom code execution detected. Converted to native Scripting.RunPowershellScript.",
+      "recommended_action": "Verify execution policy and required .NET libraries are accessible in the PAD runtime environment.",
+      "pad_fallback_action": "# [INFO] Custom script mapped to PowerShell execution."
+    }
+  ],
+
+  "unmapped_fallback_policy": {
+    "default_severity": "WARNING",
+    "missing_part": "Unmapped UiPath Enterprise Activity",
+    "diagnostic_template": "Activity '{activity_name}' ({activity_tag}) is not mapped to an exact PAD action. An informative visual placeholder card and variable initializers have been generated so the flow remains 100% pasteable.",
+    "recommended_action": "Inspect the source activity parameters in UiPath and replace the placeholder with the closest Power Automate Desktop equivalent action from the Actions pane.",
+    "pad_comment_template": "# [TODO - MANUAL ACTION NEEDED] Unmapped UiPath Activity: {activity_name} [{activity_tag}]\n# Check source parameters and replace with matching PAD action."
+  }
+}

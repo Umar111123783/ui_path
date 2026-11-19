@@ -8,7 +8,7 @@ import os
 import zipfile
 from pathlib import Path
 import streamlit as st
-from robin_converter import xaml_to_robin, validate_robin, generate_template_robin
+from robin_converter import xaml_to_robin, validate_robin, generate_template_robin, analyze_xaml_diagnostics
 from robin_db import (
     get_golden_flow, 
     save_golden_flow, 
@@ -150,10 +150,21 @@ with main_tab:
 
         if robin_code:
             val = validate_robin(robin_code)
+            diag = analyze_xaml_diagnostics(raw_xaml)
+
             if val["valid"]:
                 st.success("✅ **100% Paste-Validated for PAD Designer!** (0 syntax errors)")
             else:
                 st.warning(f"Validation notices: {val.get('errors')}")
+
+            # Migration Diagnostic Alerts from migration_rules.json
+            if diag.get("total_alerts", 0) > 0:
+                with st.expander(f"⚠️ Migration Diagnostics: {diag['total_alerts']} Missing Parts / Manual Checks Detected", expanded=True):
+                    for alert in diag["alerts"]:
+                        severity_icon = "🔴" if alert["severity"] == "WARNING" else "🔵"
+                        st.markdown(f"{severity_icon} **[{alert['severity']}] Missing Part:** `{alert['missing_part']}`")
+                        st.caption(f"**Why this was flagged:** {alert['diagnostic_message']}")
+                        st.info(f"👉 **What you should do in PAD:** {alert['recommended_action']}")
 
             st.info(
                 "💡 **How to Paste into Power Automate Desktop:**\n"

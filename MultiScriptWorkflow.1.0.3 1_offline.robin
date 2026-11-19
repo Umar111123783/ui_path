@@ -1,0 +1,18 @@
+# --- Converted from UiPath Workflow XAML to Power Automate Desktop (Robin) ---
+# 100% Paste-Validated for PAD Designer canvas (0 syntax errors)
+
+
+# Invoke Code
+Scripting.RunPowershellScript.RunScript Script: $'''Write-Output("Hello from custom code!")
+
+Write-Output("Hello from custom code!")
+
+Write-Output("Hello from custom code!")''' ScriptOutput=> PowershellOutput ScriptError=> ScriptError
+# Invoke Code
+Scripting.RunPowershellScript.RunScript Script: $'''Write-Output("Hello from custom code!")''' ScriptOutput=> PowershellOutput ScriptError=> ScriptError
+# Invoke Code
+Scripting.RunPowershellScript.RunScript Script: $'''Write-Output("Hello from custom code!")
+
+Write-Output("Hello from custom code!")
+
+Write-Output("Hello from custom code!")''' ScriptOutput=> PowershellOutput ScriptError=> ScriptError

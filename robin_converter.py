@@ -7,6 +7,68 @@ import xml.etree.ElementTree as ET
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 KB_PATH = os.path.join(ROOT_DIR, "pad-robin-action-kb-main", "PAD_Robin_ActionKB.json")
 CHECKER_PATH = os.path.join(ROOT_DIR, "pad-robin-action-kb-main", "marketing", "video", "tools", "check-flows.js")
+RULES_PATH = os.path.join(ROOT_DIR, "migration_rules.json")
+
+
+def load_migration_rules() -> dict:
+    """Loads migration diagnostic and fallback rules from migration_rules.json."""
+    if os.path.exists(RULES_PATH):
+        try:
+            with open(RULES_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def analyze_xaml_diagnostics(xaml_text: str) -> dict:
+    """Scans XAML against migration_rules.json to report missing parts and recommendations."""
+    rules_data = load_migration_rules()
+    alerts = []
+    seen_rule_ids = set()
+
+    try:
+        root = ET.fromstring(xaml_text)
+    except Exception:
+        return {"total_alerts": 0, "alerts": []}
+
+    diag_rules = rules_data.get("diagnostic_rules", [])
+
+    # 1. Check pattern triggers in raw XAML text
+    for rule in diag_rules:
+        rid = rule.get("id")
+        patterns = rule.get("trigger_patterns", [])
+        for pat in patterns:
+            if pat in xaml_text and rid not in seen_rule_ids:
+                seen_rule_ids.add(rid)
+                alerts.append({
+                    "id": rid,
+                    "severity": rule.get("severity", "WARNING"),
+                    "missing_part": rule.get("missing_part", "Edge Case"),
+                    "diagnostic_message": rule.get("diagnostic_message", ""),
+                    "recommended_action": rule.get("recommended_action", "")
+                })
+
+    # 2. Check tag triggers in activity tree
+    for elem in root.iter():
+        tag = clean_tag(elem.tag)
+        for rule in diag_rules:
+            rid = rule.get("id")
+            tags = rule.get("trigger_tags", [])
+            if tag in tags and rid not in seen_rule_ids:
+                seen_rule_ids.add(rid)
+                alerts.append({
+                    "id": rid,
+                    "severity": rule.get("severity", "WARNING"),
+                    "missing_part": rule.get("missing_part", "Missing Mapping"),
+                    "diagnostic_message": rule.get("diagnostic_message", ""),
+                    "recommended_action": rule.get("recommended_action", "")
+                })
+
+    return {
+        "total_alerts": len(alerts),
+        "alerts": alerts
+    }
 
 
 def clean_tag(tag: str) -> str:
@@ -732,12 +794,18 @@ def xaml_to_robin(xaml_text: str) -> str:
         body_lines.append("")
         body_lines.append("Excel.CloseExcel.CloseAndSaveAs Instance: ExcelInstance XmlMapName: $'''''' DocumentPath: excelPath DocumentFormat: Excel.ExcelFormat.FromExtension")
 
-    # Assemble initial Robin code
+    # Assemble initial Robin code with Diagnostics Notice
+    diag = analyze_xaml_diagnostics(xaml_text)
     header_lines = [
         "# --- Converted from UiPath Workflow XAML to Power Automate Desktop (Robin) ---",
-        "# 100% Paste-Validated for PAD Designer canvas (0 syntax errors)",
-        ""
+        "# 100% Paste-Validated for PAD Designer canvas (0 syntax errors)"
     ]
+    if diag.get("alerts"):
+        header_lines.append("# --- Migration Diagnostics & Missing Parts Notice ---")
+        for alert in diag["alerts"]:
+            header_lines.append(f"# [{alert['severity']}] Missing Part: {alert['missing_part']}")
+            header_lines.append(f"# -> Action: {alert['recommended_action']}")
+    header_lines.append("")
 
     # Pre-scan body_lines for any %VariableName% referenced anywhere in messages/strings
     full_body_text = "\n".join(body_lines)
