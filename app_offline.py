@@ -8,7 +8,7 @@ import os
 import zipfile
 from pathlib import Path
 import streamlit as st
-from robin_converter import xaml_to_robin, validate_robin, generate_template_robin, analyze_xaml_diagnostics
+from robin_converter import xaml_to_robin, validate_robin, generate_template_robin, analyze_xaml_diagnostics, deep_scan_project
 from robin_db import (
     get_golden_flow, 
     save_golden_flow, 
@@ -102,51 +102,59 @@ with main_tab:
     if not active_nupkg:
         st.info("👈 Please select or upload a `.nupkg` file in the sidebar to get started.")
     else:
-        namelist = active_nupkg.namelist()
-        xaml_files = [n for n in namelist if n.lower().endswith(".xaml")]
-
         base_pkg_name = os.path.splitext(pkg_name)[0].split('.')[0]
-        st.success(f"📦 Loaded Package: **{pkg_name}** ({len(namelist)} items, {len(xaml_files)} workflows)")
+        scan_res = deep_scan_project(active_nupkg)
+        total_wf = scan_res.get("total_workflows", 0)
 
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            selected_xaml = st.selectbox("Select Workflow (.xaml):", xaml_files)
-        with col2:
-            st.write("")
-            st.write("")
-            convert_clicked = st.button("🚀 Fast Convert to Robin", type="primary", use_container_width=True)
-
-        raw_xaml = active_nupkg.read(selected_xaml).decode("utf-8", "ignore")
-        flow_key = f"{pkg_name}::{selected_xaml}"
-        cached_entry = get_golden_flow(pkg_name=base_pkg_name, xaml_content=raw_xaml, xaml_name=os.path.basename(selected_xaml))
-
-        # Auto-convert immediately when a new bot/package is selected, or on manual click
-        if st.session_state.get("active_flow_key") != flow_key or convert_clicked:
-            if cached_entry and not convert_clicked:
-                robin_code = cached_entry["robin_script"]
-            else:
-                robin_code = xaml_to_robin(raw_xaml)
-
-            st.session_state["offline_robin_result"] = robin_code
-            st.session_state["robin_editor"] = robin_code
-            st.session_state["offline_xaml_view"] = raw_xaml
-            st.session_state["active_flow_key"] = flow_key
+        if total_wf == 0:
+            st.warning("No .xaml workflows found in this package.")
         else:
-            robin_code = st.session_state.get("robin_editor", st.session_state.get("offline_robin_result", ""))
-            raw_xaml = st.session_state.get("offline_xaml_view", raw_xaml)
+            folders_detected = list(set(f["folder"] for f in scan_res["flows"].values()))
+            folders_str = ", ".join(f"`{f}`" for f in folders_detected)
+            st.success(f"📦 Loaded: **{pkg_name}** | 📁 **Deep Scan:** Found **{total_wf}** workflow(s) across folders: {folders_str}")
 
-        if cached_entry:
-            st.markdown(
-                f'<div class="db-badge">🏆 Golden Verified Flow available in database (Source: {cached_entry.get("source")}, Last Updated: {cached_entry.get("updated_at")[:10]})</div>',
-                unsafe_allow_html=True
-            )
-            c_load1, c_load2 = st.columns([1, 3])
-            with c_load1:
-                if st.button("⚡ Reset to Golden Database"):
-                    st.session_state["offline_robin_result"] = cached_entry["robin_script"]
-                    st.session_state["robin_editor"] = cached_entry["robin_script"]
-                    st.session_state["offline_xaml_view"] = raw_xaml
-                    st.rerun()
+            if total_wf > 1:
+                view_mode = st.radio(
+                    "Select Conversion Scope:",
+                    ["🌟 Master Unified Flow (All Folders & Subflows - Single Copy & Paste)", "📄 Individual Workflows (Inspect Specific File)"],
+                    horizontal=True
+                )
+            else:
+                view_mode = "📄 Individual Workflows (Inspect Specific File)"
+
+            if view_mode.startswith("🌟 Master"):
+                selected_xaml = scan_res["main_entry"]
+                robin_code = scan_res["master_script"]
+                raw_xaml = scan_res["flows"][selected_xaml]["raw_xaml"]
+                st.info(f"⚡ **Master Unified Mode Active:** Combines **`{scan_res['main_entry']}`** and all **{total_wf - 1} subfolder workflows** into collapsible `**REGION` blocks ready for a single paste into PAD.")
+            else:
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    selected_xaml = st.selectbox("Select Workflow (.xaml):", scan_res["xaml_entries"])
+                with col2:
+                    st.write("")
+                    st.write("")
+                    if st.button("🚀 Re-Convert File", type="primary", use_container_width=True):
+                        st.session_state["active_flow_key"] = None
+
+                flow_data = scan_res["flows"][selected_xaml]
+                robin_code = flow_data["code"]
+                raw_xaml = flow_data["raw_xaml"]
+
+            cached_entry = get_golden_flow(pkg_name=base_pkg_name, xaml_content=raw_xaml, xaml_name=os.path.basename(selected_xaml))
+
+            if cached_entry:
+                st.markdown(
+                    f'<div class="db-badge">🏆 Golden Verified Flow available in database (Source: {cached_entry.get("source")}, Last Updated: {cached_entry.get("updated_at")[:10]})</div>',
+                    unsafe_allow_html=True
+                )
+                c_load1, c_load2 = st.columns([1, 3])
+                with c_load1:
+                    if st.button("⚡ Reset to Golden Database"):
+                        st.session_state["offline_robin_result"] = cached_entry["robin_script"]
+                        st.session_state["robin_editor"] = cached_entry["robin_script"]
+                        st.session_state["offline_xaml_view"] = raw_xaml
+                        st.rerun()
 
         if robin_code:
             val = validate_robin(robin_code)
@@ -180,16 +188,28 @@ with main_tab:
                 key="robin_editor"
             )
 
-            btn1, btn2, btn3 = st.columns([1, 1, 2])
-            with btn1:
+            btn_cols = st.columns([1, 1, 1, 1] if total_wf > 1 else [1, 1, 2])
+            with btn_cols[0]:
                 st.download_button(
                     "⬇️ Download .robin",
                     data=edited_script,
-                    file_name=f"{base_pkg_name}.robin",
+                    file_name=f"{base_pkg_name}_{'master' if view_mode.startswith('🌟 Master') else os.path.splitext(os.path.basename(selected_xaml))[0]}.robin",
                     mime="text/plain",
                     use_container_width=True
                 )
-            with btn2:
+            
+            if total_wf > 1:
+                with btn_cols[1]:
+                    st.download_button(
+                        "📦 Download All (.zip)",
+                        data=scan_res.get("zip_bytes", b""),
+                        file_name=f"{base_pkg_name}_all_workflows.zip",
+                        mime="application/zip",
+                        use_container_width=True
+                    )
+            
+            save_col = btn_cols[2] if total_wf > 1 else btn_cols[1]
+            with save_col:
                 if st.button("💾 Save to Golden Database", use_container_width=True):
                     saved = save_golden_flow(
                         pkg_name=base_pkg_name,
