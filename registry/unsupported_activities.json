@@ -1,0 +1,33 @@
+{
+  "StateMachine": {
+    "reason": "Power Automate Desktop does not have a native visual State Machine execution model.",
+    "alternative": "Flattens state transitions into a sequential LOOP WHILE with SWITCH/CASE state router.",
+    "strict_mode_blocking": false
+  },
+  "Parallel": {
+    "reason": "PAD Desktop runs on a single foreground automation thread; multi-branch parallel execution is not supported.",
+    "alternative": "Execute branches sequentially in order.",
+    "strict_mode_blocking": true
+  },
+  "Pick": {
+    "reason": "Race conditions and event-driven pick branches are not supported natively in PAD.",
+    "alternative": "Evaluate event triggers sequentially with explicit timeouts.",
+    "strict_mode_blocking": true
+  },
+  "GetQueueItem": {
+    "reason": "UiPath Orchestrator Queues are proprietary to UiPath Cloud/Server.",
+    "alternative": "Power Automate Cloud flow queue triggers or Excel/SharePoint queue tables.",
+    "strict_mode_blocking": false
+  },
+  "AddQueueItem": {
+    "reason": "UiPath Orchestrator Queues are proprietary to UiPath Cloud/Server.",
+    "alternative": "Power Automate Cloud flow queue triggers or Excel/SharePoint queue tables.",
+    "strict_mode_blocking": false
+  },
+  "GetAsset": {
+    "reason": "UiPath Orchestrator Assets are proprietary to UiPath Cloud/Server.",
+    "alternative": "PAD Environment Variables or CyberArk/Azure KeyVault actions.",
+    "strict_mode_blocking": false
+  }
+}
+

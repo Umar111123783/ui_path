@@ -1,0 +1,255 @@
+{
+  "Assign": {
+    "target": "SET",
+    "category": "assign",
+    "support": "native",
+    "validation": "required"
+  },
+  "MultipleAssign": {
+    "target": "SET",
+    "category": "assign",
+    "support": "native",
+    "validation": "required"
+  },
+  "If": {
+    "target": "IF",
+    "category": "control_flow",
+    "support": "native",
+    "validation": "required"
+  },
+  "Switch": {
+    "target": "SWITCH",
+    "category": "control_flow",
+    "support": "native",
+    "validation": "required"
+  },
+  "While": {
+    "target": "LOOP_WHILE",
+    "category": "loop",
+    "support": "native",
+    "validation": "required"
+  },
+  "DoWhile": {
+    "target": "LOOP_WHILE",
+    "category": "loop",
+    "support": "native",
+    "validation": "required"
+  },
+  "ForEach": {
+    "target": "LOOP_FOREACH",
+    "category": "loop",
+    "support": "native",
+    "validation": "required"
+  },
+  "ForEachRow": {
+    "target": "LOOP_FOREACH",
+    "category": "loop",
+    "support": "native",
+    "validation": "required"
+  },
+  "ForEachRowX": {
+    "target": "LOOP_FOREACH",
+    "category": "loop",
+    "support": "native",
+    "validation": "required"
+  },
+  "LogMessage": {
+    "target": "Logging.LogMessage",
+    "category": "logging",
+    "support": "native",
+    "validation": "required"
+  },
+  "WriteLine": {
+    "target": "Logging.LogMessage",
+    "category": "logging",
+    "support": "native",
+    "validation": "required"
+  },
+  "MessageBox": {
+    "target": "Display.ShowMessageDialog.ShowMessage",
+    "category": "ui",
+    "support": "native",
+    "validation": "required"
+  },
+  "InputDialog": {
+    "target": "Display.InputDialog",
+    "category": "ui",
+    "support": "native",
+    "validation": "required"
+  },
+  "CustomInput": {
+    "target": "Display.InputDialog",
+    "category": "ui",
+    "support": "composite",
+    "validation": "required"
+  },
+  "ReadTextFile": {
+    "target": "File.ReadTextFromFile.ReadText",
+    "category": "file",
+    "support": "native",
+    "validation": "required"
+  },
+  "WriteTextFile": {
+    "target": "File.WriteText",
+    "category": "file",
+    "support": "native",
+    "validation": "required"
+  },
+  "CopyFile": {
+    "target": "File.Copy",
+    "category": "file",
+    "support": "native",
+    "validation": "required"
+  },
+  "DeleteFile": {
+    "target": "File.Delete",
+    "category": "file",
+    "support": "native",
+    "validation": "required"
+  },
+  "ExcelApplicationScope": {
+    "target": "Excel.LaunchExcel.Launch",
+    "category": "excel",
+    "support": "native",
+    "validation": "required"
+  },
+  "ExcelReadRange": {
+    "target": "Excel.ReadFromExcel.ReadCells",
+    "category": "excel",
+    "support": "native",
+    "validation": "required"
+  },
+  "ExcelWriteRange": {
+    "target": "Excel.WriteToExcel.WriteCell",
+    "category": "excel",
+    "support": "native",
+    "validation": "required"
+  },
+  "ExcelCloseWorkbook": {
+    "target": "Excel.CloseExcel.CloseAndSaveAs",
+    "category": "excel",
+    "support": "native",
+    "validation": "required"
+  },
+  "BuildDataTable": {
+    "target": "Variables.CreateNewDatatable",
+    "category": "data",
+    "support": "native",
+    "validation": "required"
+  },
+  "DeserializeJson": {
+    "target": "Variables.ConvertJsonToCustomObject",
+    "category": "data",
+    "support": "native",
+    "validation": "required"
+  },
+  "DeserializeJsonArray": {
+    "target": "Variables.ConvertJsonToCustomObject",
+    "category": "data",
+    "support": "composite",
+    "validation": "required"
+  },
+  "HttpClient": {
+    "target": "Web.InvokeWebService.InvokeWebService",
+    "category": "web",
+    "support": "native",
+    "validation": "required"
+  },
+  "OpenApplication": {
+    "target": "System.RunApplication.RunApplication",
+    "category": "system",
+    "support": "native",
+    "validation": "required"
+  },
+  "NApplicationCard": {
+    "target": "System.RunApplication.RunApplication",
+    "category": "ui",
+    "support": "native",
+    "validation": "required"
+  },
+  "NKeyboardShortcuts": {
+    "target": "MouseAndKeyboard.SendKeys.FocusAndSendKeys",
+    "category": "ui",
+    "support": "native",
+    "validation": "required"
+  },
+  "NTypeInto": {
+    "target": "MouseAndKeyboard.SendKeys.FocusAndSendKeys",
+    "category": "ui",
+    "support": "native",
+    "validation": "required"
+  },
+  "TypeInto": {
+    "target": "MouseAndKeyboard.SendKeys.FocusAndSendKeys",
+    "category": "ui",
+    "support": "native",
+    "validation": "required"
+  },
+  "Click": {
+    "target": "MouseAndKeyboard.SendKeys.FocusAndSendKeys",
+    "category": "ui",
+    "support": "native",
+    "validation": "required"
+  },
+  "NClick": {
+    "target": "MouseAndKeyboard.SendKeys.FocusAndSendKeys",
+    "category": "ui",
+    "support": "native",
+    "validation": "required"
+  },
+  "NCheckState": {
+    "target": "IF",
+    "category": "ui",
+    "support": "composite",
+    "validation": "required"
+  },
+  "Delay": {
+    "target": "WAIT",
+    "category": "control_flow",
+    "support": "native",
+    "validation": "required"
+  },
+  "TryCatch": {
+    "target": "BLOCK",
+    "category": "exception",
+    "support": "native",
+    "validation": "required"
+  },
+  "Throw": {
+    "target": "FlowControl.ThrowCustomError",
+    "category": "exception",
+    "support": "native",
+    "validation": "required"
+  },
+  "Rethrow": {
+    "target": "FlowControl.ThrowCustomError",
+    "category": "exception",
+    "support": "native",
+    "validation": "required"
+  },
+  "InvokeCode": {
+    "target": "Scripting.RunPowershellScript.RunScript",
+    "category": "scripting",
+    "support": "composite",
+    "validation": "required"
+  },
+  "InvokePowerShell": {
+    "target": "Scripting.RunPowershellScript.RunScript",
+    "category": "scripting",
+    "support": "native",
+    "validation": "required"
+  },
+  "InvokePowerShell`1": {
+    "target": "Scripting.RunPowershellScript.RunScript",
+    "category": "scripting",
+    "support": "native",
+    "validation": "required"
+  },
+  "InvokeWorkflowFile": {
+    "target": "CALL",
+    "category": "orchestration",
+    "support": "composite",
+    "validation": "required"
+  }
+}
+

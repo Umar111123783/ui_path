@@ -1,0 +1,28 @@
+{
+  "target": {
+    "platform": "Power Automate Desktop",
+    "version": "2.74",
+    "edition": "Classic Robin"
+  },
+  "conversion": {
+    "complexity": "AUTO",
+    "output": "SINGLE_MAIN",
+    "validation": "STRICT",
+    "flatten_workflows": true,
+    "preserve_comments": true,
+    "preserve_variable_names": true
+  },
+  "llm": {
+    "enabled": false,
+    "temperature": 0,
+    "max_repair_attempts": 2
+  },
+  "validation": {
+    "block_unsupported_activities": false,
+    "block_missing_variables": true,
+    "block_invalid_expressions": true,
+    "require_activity_mapping": false,
+    "require_traceability": true
+  }
+}
+

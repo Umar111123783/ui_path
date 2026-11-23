@@ -111,7 +111,9 @@ with main_tab:
         else:
             folders_detected = list(set(f["folder"] for f in scan_res["flows"].values()))
             folders_str = ", ".join(f"`{f}`" for f in folders_detected)
-            st.success(f"📦 Loaded: **{pkg_name}** | 📁 **Deep Scan:** Found **{total_wf}** workflow(s) across folders: {folders_str}")
+            complexity_badge = scan_res.get("complexity", "SIMPLE")
+            complexity_score = scan_res.get("complexity_score", 0.0)
+            st.success(f"📦 Loaded: **{pkg_name}** | 🧠 **Auto Detect Complexity:** `{complexity_badge}` (Score: {complexity_score}) | 📁 **Deep Scan:** Found **{total_wf}** workflow(s) across folders: {folders_str}")
 
             if total_wf > 1:
                 view_mode = st.radio(
