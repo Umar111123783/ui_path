@@ -327,6 +327,7 @@ def xaml_to_robin(xaml_text: str) -> str:
     desktop_folder_initialized = False
     documents_folder_initialized = False
     excel_opened = False
+    excel_written = False
 
     def ensure_desktop_folder():
         nonlocal desktop_folder_initialized
@@ -345,7 +346,7 @@ def xaml_to_robin(xaml_text: str) -> str:
             documents_folder_initialized = True
 
     def walk(element, indent=""):
-        nonlocal excel_opened
+        nonlocal excel_opened, excel_written
         tag = clean_tag(element.tag)
 
         # 1. InputDialog
@@ -588,15 +589,36 @@ def xaml_to_robin(xaml_text: str) -> str:
         # 8. Excel Automation
         if tag in ["ExcelProcessScopeX", "ExcelApplicationCard", "ExcelApplicationScope"]:
             if not excel_opened:
-                ensure_desktop_folder()
-                wb_path = get_argument_text(element, "WorkbookPath", "excelPath")
+                wb_path = get_argument_text(element, "WorkbookPath", "")
                 if wb_path.startswith("[") and wb_path.endswith("]"):
                     wb_path = wb_path[1:-1]
-                body_lines.append(f"{indent}Excel.LaunchExcel.Launch UseMachineLocale: False Visible: True LoadAddInsAndMacros: False Instance=> ExcelInstance")
+                if wb_path and wb_path != "excelPath":
+                    clean_wb = clean_vb_string_to_robin(wb_path) if (wb_path.startswith('"') or wb_path.startswith("'") or wb_path.startswith("$")) else wb_path
+                    body_lines.append(f"{indent}Excel.LaunchExcel.LaunchAndOpen Path: {clean_wb} Visible: True ReadOnly: False LoadAddInsAndMacros: False Instance=> ExcelInstance")
+                else:
+                    ensure_desktop_folder()
+                    body_lines.append(f"{indent}Excel.LaunchExcel.Launch UseMachineLocale: False Visible: True LoadAddInsAndMacros: False Instance=> ExcelInstance")
                 declared_set.add("excelinstance")
                 excel_opened = True
             for ch in element:
                 walk(ch, indent)
+            return
+
+        if tag in ["ExcelGetWorkbookSheet", "GetWorkbookSheet"]:
+            sheet_var = get_argument_text(element, "Sheet", "SheetName")
+            if sheet_var.startswith("[") and sheet_var.endswith("]"):
+                sheet_var = sheet_var[1:-1]
+            idx_str = get_argument_text(element, "Index", "0")
+            if idx_str.startswith("[") and idx_str.endswith("]"):
+                idx_str = idx_str[1:-1]
+            try:
+                idx_val = int(idx_str)
+            except ValueError:
+                idx_val = 0
+            declared_set.add(sheet_var.lower())
+            declared_set.add("sheetnames")
+            body_lines.append(f"{indent}Excel.GetAllWorksheets Instance: ExcelInstance Worksheets=> SheetNames")
+            body_lines.append(f"{indent}SET {sheet_var} TO SheetNames[{idx_val}]")
             return
 
         if tag in ["ReadRange", "ReadRangeX"]:
@@ -608,6 +630,7 @@ def xaml_to_robin(xaml_text: str) -> str:
             return
 
         if tag in ["WriteRange", "WriteRangeX", "WriteCell"]:
+            excel_written = True
             dt_in = get_argument_text(element, "DataTable", get_argument_text(element, "Value", "DataTable"))
             if dt_in.startswith("[") and dt_in.endswith("]"):
                 dt_in = dt_in[1:-1]
@@ -915,7 +938,10 @@ def xaml_to_robin(xaml_text: str) -> str:
 
     if excel_opened:
         body_lines.append("")
-        body_lines.append("Excel.CloseExcel.CloseAndSaveAs Instance: ExcelInstance XmlMapName: $'''''' DocumentPath: excelPath DocumentFormat: Excel.ExcelFormat.FromExtension")
+        if excel_written:
+            body_lines.append("Excel.CloseExcel.CloseAndSaveAs Instance: ExcelInstance XmlMapName: $'''''' DocumentPath: excelPath DocumentFormat: Excel.ExcelFormat.FromExtension")
+        else:
+            body_lines.append("Excel.CloseExcel.Close Instance: ExcelInstance")
 
     # Assemble initial Robin code with Diagnostics Notice
     diag = analyze_xaml_diagnostics(xaml_text)
