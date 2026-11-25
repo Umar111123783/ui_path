@@ -1,57 +1,68 @@
-# UiPath to Power Automate Desktop (Robin) Migration Suite
+# Universal UiPath-to-PAD Conversion Engine
+> Automated migration of enterprise UiPath automation packages into Microsoft Power Automate Desktop 2.74 Classic Robin flows.
 
-100% Offline & Online Conversion Tools with Golden Database & Pre-Paste Validation.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![Target Platform](https://img.shields.io/badge/Target-PAD%202.74%20Classic%20Robin-green)](https://learn.microsoft.com/en-us/power-automate/desktop-flows/)
+[![Validation](https://img.shields.io/badge/Syntax%20Validation-0%20Errors%20(check--flows.js)-brightgreen)](pad-robin-action-kb-main/marketing/video/tools/check-flows.js)
+[![License](https://img.shields.io/badge/Architecture-7--Stage%20IR%20Compiler-orange)](HANDOVER_DOCUMENTATION.md)
 
 ---
 
-## 🚀 Quick Start (Choose Your Mode)
+## 📖 Team Handover Documentation
+For the complete technical architecture, file map, syntax rules, developer guide, and handover checklist, see:
+👉 **[HANDOVER_DOCUMENTATION.md](HANDOVER_DOCUMENTATION.md)**
 
-### Mode 1: 100% Pure Offline Converter (No Internet, No API Key)
-- **Double-click:** `run_offline.bat`
-- Opens at: `http://localhost:8505`
-- **Features:**
-  - Converts any `.nupkg` package into 100% paste-validated Robin script.
-  - Automatically queries the **Golden Database** (`robin_database.db`) for instant cache hits.
-  - Allows you to save newly verified flows with 1 click.
-  - Includes **32 Pre-verified Enterprise Activity Patterns** (Excel, PDF, Outlook, SQL, Web API).
+---
 
-### Mode 2: Full Explorer (Offline AST + PwC GenAI LLM)
-- **Double-click:** `start.bat`
-- Opens at: `http://localhost:8502`
-- **Features:**
-  - Deep `.nupkg` file inspection, dependency discovery, and XAML activity breakdown.
-  - Pure LLM Converter powered by the **PwC GenAI APAC Gateway** (`https://genai-sharedservice-apac.pwcinternal.com`).
+## 🚀 Quick Start
 
-### Mode 3: Instant Command Line (CLI)
-Open your terminal inside this folder and run:
+### 1. Command Line Interface (CLI)
+Convert any UiPath package (`.zip`, `.nupkg`, folder, or `.xaml`):
 ```powershell
-python test_offline.py "data/ReadPdf_FromPageToPage.1.0.1 1.nupkg"
+python convert.py "data/SourcingBot.zip"
+```
+Generated artifacts are placed in `Conversion_Output/`:
+* `Conversion_Output/Main_Robin_Script.txt` (1-Click Paste for PAD Main tab)
+* `Conversion_Output/Reports/Conversion_Report.html` (Visual audit report)
+* `Conversion_Output/Subflows/*.robin` (Individual subflows)
+
+### 2. Streamlit Web UI
+Launch the interactive web portal:
+```powershell
+streamlit run app_offline.py
+```
+Open `http://localhost:8501` to drag and drop packages, inspect flows, and download conversion bundles.
+
+### 3. Run Regression Test Suite
+Run automated verification across 5 real-world enterprise packages:
+```powershell
+python tests/test_universal_engine.py
 ```
 
 ---
 
-## 📁 File Structure
+## 🏗️ 7-Stage Decoupled IR Architecture
 
-| File / Folder | Purpose |
-| :--- | :--- |
-| **`app_offline.py`** | Dedicated Streamlit Web UI for 100% pure offline conversion. |
-| **`run_offline.bat`** | One-click launcher for `app_offline.py` (Port 8505). |
-| **`robin_converter.py`** | Universal AST transpiler with .NET System.IO transpilation & 0-error validator. |
-| **`robin_db.py`** | Database manager for Golden flows, enterprise patterns, and AI training exports. |
-| **`robin_database.db`** | SQLite database pre-loaded with verified flows and 32 activity patterns. |
-| **`test_offline.py`** | Offline CLI runner (`python test_offline.py <file.nupkg>`). |
-| **`test_online.py`** | Online CLI runner for PwC GenAI gateway (`python test_online.py <file.nupkg> <api_key>`). |
-| **`nupkg_browser.py`** | All-in-one explorer with XAML analysis, offline converter, and PwC GenAI. |
-| **`start.bat`** | One-click launcher for `nupkg_browser.py` (Port 8502). |
-| **`data/`** | Sample `.nupkg` packages and AI fine-tuning datasets (`golden_training_openai.jsonl`, etc.). |
-| **`pad-robin-action-kb-main/`** | Official PAD 2.74 action knowledge base (1,135 actions) & `check-flows.js` validator. |
+1. **Stage 1 — Project Discovery (`scanner/project_scanner.py`):** Recursive extraction, `project.json` parsing, workflow inventory.
+2. **Stage 2 — XAML Intelligence (`parsers/xaml_parser.py`, `parsers/expression_parser.py`):** Schema-aware XML parsing, AST extraction, expression transpilation.
+3. **Stage 3 — Auto-Detect Complexity (`analyzer/complexity_analyzer.py`):** 7-dimension scoring (`SIMPLE`, `INTERMEDIATE`, `ADVANCED`, `ENTERPRISE`) & Blueprint detection.
+4. **Stage 4 — Dependency Graph & IR (`scanner/workflow_graph.py`, `ir/`):** Invocation hierarchy, topological sort, cycle detection.
+5. **Stage 5 — Conversion Registry & Flattener (`converters/workflow_flattener.py`, `robin_converter.py`):** Inlines subflows into sequential `**REGION` blocks on the Main tab.
+6. **Stage 6 — Native Robin PAD 2.74 Generation:** Clean variable initializations, single quote escaping, paired `%` interpolations.
+7. **Stage 7 — Strict Validation (`validators/strict_validator.py`):** Balance checks & official Microsoft `check-flows.js` execution (0 errors required).
 
 ---
 
-## 🛡️ Why Scripts Are Guaranteed Pasteable (0 Errors)
-1. **Dynamic AST Variable Discovery**: Discovers all variables and types (`DataTable`, `List`, `Number`, `Boolean`, `String`) and pre-declares them at Line 1.
-2. **.NET System.IO Transpilation**: Converts raw C# methods (`Directory.GetFiles`, `Path.GetFileNameWithoutExtension`, `.Count()`) into native PAD actions.
-3. **Strict Formatting Rules**: Enforces double backslashes before `%` (`\\%Var%`), prevents trailing backslash quote escapes (`C:\\`), and eliminates lone `%` signs.
-4. **Pre-Paste Validation Loop**: Every script is automatically validated with `check-flows.js` before being presented.
-5. **Modern & Classic UI Automation**: Native support for UiPath Modern Experience (`NApplicationCard`, `NKeyboardShortcuts`, `NTypeInto`, `NCheckState`, `NClick`) and Classic UI activities into native PAD desktop actions.
+## 📁 Repository Overview
 
+* `convert.py` — Master CLI runner.
+* `app_offline.py` — Streamlit web application.
+* `core/` — Master pipeline coordinator (`conversion_engine.py`), context, and project models.
+* `scanner/` — Project and workflow graph scanners.
+* `parsers/` — XAML XML parser and VB.NET / C# expression transpiler.
+* `analyzer/` — 7-dimension complexity scoring and scaffold detection.
+* `converters/` — Single Main flattener and activity converters.
+* `validators/` — Strict control-flow validator and `check-flows.js` runner.
+* `generators/` — HTML and Markdown audit report generators.
+* `pad-robin-action-kb-main/` — Microsoft ActionKB (1,135 actions) and `check-flows.js`.
+* `tests/` — Automated test suite verifying 5 enterprise packages.
